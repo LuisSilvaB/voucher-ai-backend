@@ -15,5 +15,6 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Authorization',
   });
   await app.listen(port ?? 3000);
+  console.log(`Server running on port ${port} 🚀`);
 }
 bootstrap();

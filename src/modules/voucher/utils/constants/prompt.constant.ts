@@ -1,9 +1,12 @@
 export const generateVoucherPrompt = (text: string) => {
   return `
-        Analiza la siguiente información de una boleta y extrae la siguiente información en formato JSON:
+        Analiza la siguiente información de una boleta y extrae la siguiente información en formato JSON, no incluyas el texto original, informacion adicional sono el JSON:
+        - número de transacción
         - Fecha
+        - IGV 
         - Total
-        - Items (descripción, cantidad, precio unitario, total)
+        - cliente (solo nombre)
+        - Items (código, nombre, cantidad, precio unitario, total)
         - Vendedor
         - Monto de impuestos (si está disponible)
         
@@ -12,17 +15,19 @@ export const generateVoucherPrompt = (text: string) => {
         Formato esperado:
         {
           "date": "YYYY-MM-DD",
-          "total": number,
+          "total": number,          
+          "vendor": "string",
+          "tax_amount": number
+          "client": "string",
           "items": [
             {
-              "description": "string",
+              "code": "string",
+              "name": "string",
               "quantity": number,
-              "unitPrice": number,
+              "unit_price": number,
               "total": number
             }
           ],
-          "vendor": "string",
-          "taxAmount": number
         }
       `;
 };

@@ -1,15 +1,22 @@
-export interface Receipt {
+export type VoucherType = {
   id: string;
-  date: Date;
+  created_at: string;
+  date: string;
   total: number;
-  items: ReceiptItem[];
   vendor: string;
-  taxAmount?: number;
-}
+  tax_amount: number;
+  client: string;
+  img_url: string;
+  ITEMS: ItemType[];
+};
 
-interface ReceiptItem {
-  description: string;
+export type ItemType = {
+  id?: number;
+  created_at?: string;
+  code: string;
+  name: string;
   quantity: number;
-  unitPrice: number;
+  unit_price: number;
   total: number;
-}
+  VOUCHER_ID: string;
+};

@@ -1,13 +1,14 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { VoucherService } from '../services/voucher.service';
+import { VoucherType } from '../types/vaucher.type';
 
 @Controller('voucher')
 export class VoucherController {
   constructor(private readonly voucherService: VoucherService) {}
 
   @Get()
-  getVoucher(): string {
-    return this.voucherService.getVoucher();
+  getVoucher(): Promise<VoucherType[]> {
+    return this.voucherService.findAllVouchers();
   }
 
   @Post('scan')

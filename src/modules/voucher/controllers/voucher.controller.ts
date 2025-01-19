@@ -23,7 +23,12 @@ export class VoucherController {
     return this.voucherService.findAllVouchers();
   }
 
-  @Post('scan')
+  @Post('scan-tesseract')
+  scanVoucherTesseract(@Body('text') text: string) {
+    return this.voucherService.scanVoucherTesseract(text);
+  }
+
+  @Post('create-voucher')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -37,11 +42,11 @@ export class VoucherController {
       }),
     }),
   )
-  scanVoucher(
+  createVoucher(
     @UploadedFile() file: Express.Multer.File,
-    @Body('text') text: string,
+    @Body('voucher') voucher: VoucherType,
   ) {
-    return this.voucherService.scanVoucher(text, file);
+    return this.voucherService.createVoucher(voucher, file);
   }
 
   @Delete('delete-voucher')

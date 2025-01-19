@@ -6,7 +6,7 @@ export const generateVoucherPrompt = (text: string) => {
         - IGV 
         - Total
         - cliente (solo nombre o name; no json)
-        - Items (código, nombre, cantidad, precio unitario, total)
+        - ITEMS (código, nombre, cantidad, precio unitario, total)
         - Vendedor
         - Monto de impuestos (si está disponible)
         
@@ -20,13 +20,12 @@ export const generateVoucherPrompt = (text: string) => {
           "vendor": "string",
           "tax_amount": number
           "client": "string",
-          "items": [
+          "ITEMS": [
             {
               "code": "string",
               "name": "string",
               "quantity": number,
               "unit_price": number,
-              "total": number
             }
           ],
         }

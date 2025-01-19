@@ -18,6 +18,5 @@ export type ItemType = {
   name: string;
   quantity: number;
   unit_price: number;
-  total: number;
   VOUCHER_ID: string;
 };

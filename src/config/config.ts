@@ -7,5 +7,6 @@ export const config = (): ConfigProps => ({
     groqApiKey: process.env.GROQ_API_KEY,
     supabaseUrl: process.env.SUPABASE_URL!,
     supabaseKey: process.env.SUPABASE_KEY!,
+    togetherApiKey: process.env.TOGETHER_API_KEY!,
   },
 });

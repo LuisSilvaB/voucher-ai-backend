@@ -8,6 +8,7 @@ export type VoucherType = {
   tax_amount: number;
   client: string;
   img_name: string;
+  igv: number;
   ITEMS: ItemType[];
 };
 

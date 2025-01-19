@@ -5,6 +5,7 @@ import {
   Get,
   Post,
   Query,
+  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -23,9 +24,16 @@ export class VoucherController {
     return this.voucherService.findAllVouchers();
   }
 
-  @Post('scan-tesseract')
-  scanVoucherTesseract(@Body('text') text: string) {
-    return this.voucherService.scanVoucherTesseract(text);
+  @Post('scan-tesseract-groq')
+  @UseInterceptors(FileInterceptor('text'))
+  scanVoucherGroq(@Req() req) {
+    return this.voucherService.scanVoucherGroq(req.body.text);
+  }
+
+  @Post('scan-tesseract-together')
+  @UseInterceptors(FileInterceptor('text'))
+  scanVoucherTesseract(@Req() req) {
+    return this.voucherService.scanVoucherTogether(req.body.text);
   }
 
   @Post('create-voucher')
@@ -44,9 +52,10 @@ export class VoucherController {
   )
   createVoucher(
     @UploadedFile() file: Express.Multer.File,
-    @Body('voucher') voucher: VoucherType,
+    @Body('voucher') voucher: string,
   ) {
-    return this.voucherService.createVoucher(voucher, file);
+    const parsedVoucher = JSON.parse(voucher);
+    return this.voucherService.createVoucher(parsedVoucher, file);
   }
 
   @Delete('delete-voucher')

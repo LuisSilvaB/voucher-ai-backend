@@ -1,6 +1,7 @@
 interface ApiConfigProps {
   groqApiUrl: string;
   groqApiKey: string;
+  togetherApiKey: string;
   supabaseUrl: string;
   supabaseKey: string;
 }

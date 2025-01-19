@@ -5,7 +5,7 @@ export const generateVoucherPrompt = (text: string) => {
         - Fecha
         - IGV 
         - Total
-        - cliente (solo nombre)
+        - cliente (solo nombre o name; no json)
         - Items (código, nombre, cantidad, precio unitario, total)
         - Vendedor
         - Monto de impuestos (si está disponible)
@@ -15,6 +15,7 @@ export const generateVoucherPrompt = (text: string) => {
         Formato esperado:
         {
           "date": "YYYY-MM-DD",
+          "transaction_number": "string",
           "total": number,          
           "vendor": "string",
           "tax_amount": number

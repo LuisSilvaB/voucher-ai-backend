@@ -5,7 +5,6 @@ import {
   Get,
   Post,
   Query,
-  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,16 +23,12 @@ export class VoucherController {
     return this.voucherService.findAllVouchers();
   }
 
-  @Post('scan-tesseract-groq')
-  @UseInterceptors(FileInterceptor('text'))
-  scanVoucherGroq(@Req() req) {
-    return this.voucherService.scanVoucherGroq(req.body.text);
-  }
-
-  @Post('scan-tesseract-together')
-  @UseInterceptors(FileInterceptor('text'))
-  scanVoucherTesseract(@Req() req) {
-    return this.voucherService.scanVoucherTogether(req.body.text);
+  @Post('scan-tesseract')
+  scanVoucherTesseract(
+    @Body() body: { text: string; model: 'gemini' | 'together' | 'groq' },
+  ) {
+    console.log(body);
+    return this.voucherService.getVoucherDataByModel(body.text, body.model);
   }
 
   @Post('scan-google-vision')
@@ -50,8 +45,15 @@ export class VoucherController {
       }),
     }),
   )
-  scanVoucherGoogleVision(@UploadedFile() file: Express.Multer.File) {
-    return this.voucherService.scanVoucherGoogleVisionAndGemini(file);
+  scanVoucherGoogleVision(
+    @UploadedFile()
+    file: Express.Multer.File,
+    @Body()
+    body: {
+      model: 'gemini' | 'together' | 'groq';
+    },
+  ) {
+    return this.voucherService.getVoucherDataByGoogleVision(file, body.model);
   }
 
   @Post('create-voucher')

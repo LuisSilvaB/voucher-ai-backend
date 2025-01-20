@@ -1,29 +1,47 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import axios from 'axios';
+import Together from 'together-ai';
+import { ImageAnnotatorClient } from '@google-cloud/vision';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { generateVoucherPrompt } from '../utils/constants/prompt.constant';
-import axios from 'axios';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ItemType, VoucherType } from '../types/vaucher.type';
-import Together from 'together-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 @Injectable()
 export class VoucherService {
   private readonly GROQ_API_URL: string;
   private readonly GROQ_API_KEY: string;
   private readonly TOGETHER_API_KEY: string;
-  private readonly conf: any;
+  private readonly GOOGLE_CLOUD_API_KEY: string;
+  private readonly PATH_TO_CREDENTIALS: string;
   private readonly supabaseClient: SupabaseClient;
+  private readonly cloudVisionClient: ImageAnnotatorClient;
+  private readonly textServiceClient: GoogleGenerativeAI;
+  private readonly conf: any;
   private readonly logger = new Logger(VoucherService.name);
 
   constructor(private readonly configService: ConfigService) {
     this.GROQ_API_URL = this.configService.get('api.groqApiUrl');
     this.GROQ_API_KEY = this.configService.get('api.groqApiKey');
     this.TOGETHER_API_KEY = this.configService.get('api.togetherApiKey');
+    this.PATH_TO_CREDENTIALS = this.configService.get('pathToCredentials');
+    this.GOOGLE_CLOUD_API_KEY = this.configService.get('api.googleCloudApiKey');
     this.supabaseClient = createClient(
       this.configService.get('api.supabaseUrl'),
       this.configService.get('api.supabaseKey'),
     );
+    this.cloudVisionClient = new ImageAnnotatorClient({
+      credentials: JSON.parse(
+        fs.readFileSync(
+          path.join(__dirname, '../../../../', this.PATH_TO_CREDENTIALS),
+          'utf-8',
+        ),
+      ),
+    });
+    this.textServiceClient = new GoogleGenerativeAI(this.GOOGLE_CLOUD_API_KEY);
     this.conf = {
       lang: 'eng',
       oem: 1,
@@ -48,6 +66,7 @@ export class VoucherService {
       throw error;
     }
   }
+
   async scanVoucherGroq(text: string) {
     try {
       const prompt = generateVoucherPrompt(text ?? '');
@@ -107,8 +126,6 @@ export class VoucherService {
         apiKey: this.TOGETHER_API_KEY,
       });
 
-      console.log(text);
-
       const prompt = generateVoucherPrompt(text || '');
       const response = await together.chat.completions.create({
         messages: [
@@ -118,7 +135,7 @@ export class VoucherService {
         model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
         temperature: 0.1,
       });
-      console.log(response.choices?.[0]?.message?.content);
+
       const regex = /```json([\s\S]*?)```/;
       let match = response.choices?.[0]?.message?.content?.match(regex);
       let json = '';
@@ -141,6 +158,48 @@ export class VoucherService {
       return messageContent;
     } catch (error) {
       console.error('Error in scanVoucherTogether:', error);
+      throw error;
+    }
+  }
+
+  async scanVoucherGoogleVisionAndGemini(file: Express.Multer.File) {
+    try {
+      const uploadPath = path.join(
+        __dirname,
+        '../../../../uploads',
+        file.filename,
+      );
+      const existFile = fs.existsSync(uploadPath);
+      if (existFile) {
+        // const fileContent = fs.readFileSync(uploadPath);
+        const [result] = await this.cloudVisionClient.textDetection(uploadPath);
+        const modelAi = this.textServiceClient.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+        });
+        const prompt = generateVoucherPrompt(result.fullTextAnnotation.text);
+        const response = await modelAi.generateContent(prompt);
+        const regex = /```json([\s\S]*?)```/;
+        let match = response.response.text().match(regex);
+        let json = '';
+        if (match) {
+          json = match[1].trim();
+        } else {
+          const jsonRegex = /{[\s\S]*}/;
+          match = response.response.text().match(jsonRegex);
+          if (match) {
+            json = match[0].trim();
+          } else {
+            throw new Error('No JSON found in response');
+          }
+        }
+        json = json.replace(/\\_/g, '_');
+        const messageContent = JSON.parse(json);
+        return messageContent;
+      } else {
+        throw new Error('File not found');
+      }
+    } catch (error) {
+      console.log('Error in scanVoucher:', error);
       throw error;
     }
   }

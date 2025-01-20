@@ -36,6 +36,24 @@ export class VoucherController {
     return this.voucherService.scanVoucherTogether(req.body.text);
   }
 
+  @Post('scan-google-vision')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  scanVoucherGoogleVision(@UploadedFile() file: Express.Multer.File) {
+    return this.voucherService.scanVoucherGoogleVisionAndGemini(file);
+  }
+
   @Post('create-voucher')
   @UseInterceptors(
     FileInterceptor('file', {

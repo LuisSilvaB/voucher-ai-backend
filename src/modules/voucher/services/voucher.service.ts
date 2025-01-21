@@ -181,7 +181,7 @@ export class VoucherService {
       if (file) {
         const uploadPath = path.join(
           __dirname,
-          '../../../../uploads',
+          '../../../../tmp',
           file.filename,
         );
         const existFile = fs.existsSync(uploadPath);
@@ -298,7 +298,7 @@ export class VoucherService {
       if (file) {
         const uploadPath = path.join(
           __dirname,
-          '../../../../uploads',
+          '../../../../tmp',
           file.filename,
         );
         const existFile = fs.existsSync(uploadPath);

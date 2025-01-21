@@ -7,7 +7,7 @@ import { ChatModelsAiModule } from '../integrations/chat-models-ai/chat-models-a
 import { ModelVisionModule } from '../integrations/model-vision/model-vision.module';
 @Module({
   imports: [
-    MulterModule.register({ dest: './uploads' }),
+    MulterModule.register({ dest: './tmp' }),
     SupabaseModule,
     ChatModelsAiModule,
     ModelVisionModule,

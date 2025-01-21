@@ -32,7 +32,7 @@ export class ModelVisionService {
     try {
       const uploadPath = path.join(
         __dirname,
-        '../../../../../uploads',
+        '../../../../../tmp',
         file.filename,
       );
       const existFile = fs.existsSync(uploadPath);
@@ -58,7 +58,7 @@ export class ModelVisionService {
     try {
       const uploadPath = path.join(
         __dirname,
-        '../../../../../uploads',
+        '../../../../../tmp',
         file.filename,
       );
 

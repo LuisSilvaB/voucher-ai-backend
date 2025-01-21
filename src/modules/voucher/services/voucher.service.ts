@@ -4,9 +4,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { generateVoucherPrompt } from '../utils/constants/prompt.constant';
 import { ItemType, VoucherType } from '../types/vaucher.type';
-import { SupabaseService } from 'src/modules/integrations/supabase/services/supabase.service';
-import { ChatModelsAiService } from 'src/modules/integrations/chat-models-ai/services/chat-models-ai.service';
-import { ModelVisionService } from 'src/modules/integrations/model-vision/services/model-vision.service';
+import { SupabaseService } from '../../integrations/supabase/services/supabase.service';
+import { ChatModelsAiService } from '../../integrations/chat-models-ai/services/chat-models-ai.service';
+import { ModelVisionService } from '../../integrations/model-vision/services/model-vision.service';
 
 @Injectable()
 export class VoucherService {

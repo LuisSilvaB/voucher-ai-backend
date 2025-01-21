@@ -41,104 +41,6 @@ export class VoucherService {
     }
   }
 
-  async createVoucher(voucher: VoucherType, file: Express.Multer.File) {
-    try {
-      const client = this.supabaseService.getClient();
-      const { data, error } = await client
-        .from('VOUCHERS')
-        .insert({
-          transaction_number: voucher.transaction_number,
-          date: voucher.date ?? null,
-          igv: voucher.igv ?? 0,
-          total: voucher.total ?? 0,
-          vendor: voucher.vendor ?? '',
-          tax_amount: voucher.tax_amount ?? 0,
-          client: voucher.client ?? '',
-          img_name: file?.filename ?? '',
-        })
-        .select('*');
-      if (error) {
-        throw new Error(error.message);
-      }
-      if (file) {
-        const uploadPath = path.join(
-          __dirname,
-          '../../../../uploads',
-          file.filename,
-        );
-        const existFile = fs.existsSync(uploadPath);
-        if (existFile) {
-          const fileContent = fs.readFileSync(uploadPath);
-          const { data: s3Data, error: s3Error } = await client.storage
-            .from('VOUCHER_AI')
-            .upload(`/VOUCHERS/${file.filename}`, fileContent);
-          if (s3Error || !s3Data) {
-            throw new Error(
-              `Failed to upload file: ${s3Data}, ${s3Error.message}`,
-            );
-          }
-          // delete file from uploads folder
-          fs.unlinkSync(uploadPath);
-        }
-      }
-      let itemsResponse = [];
-      if (voucher.ITEMS.length) {
-        const itemsToInsert = voucher.ITEMS.map((item: ItemType) => ({
-          code: item.code,
-          name: item.name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          VOUCHER_ID: data[0].id,
-        }));
-        const { data: items, error: itemsError } = await client
-          .from('ITEMS')
-          .insert(itemsToInsert)
-          .select('*');
-        if (itemsError) {
-          throw new Error(itemsError.message);
-        }
-        itemsResponse = items;
-      }
-      const newVoucher: VoucherType = {
-        ...data[0],
-        ITEMS: itemsResponse,
-      };
-      return JSON.stringify(newVoucher);
-    } catch (error) {
-      console.log('Error in createVoucher:', error);
-      throw error;
-    }
-  }
-
-  async deleteVoucher(id: string) {
-    const client = this.supabaseService.getClient();
-    try {
-      const { data, error } = await client
-        .from('VOUCHERS')
-        .delete()
-        .eq('id', id)
-        .select('*');
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const { error: storageError } = await client.storage
-        .from('VOUCHER_AI')
-        .remove([`VOUCHERS/${data[0].img_name}`]);
-
-      if (storageError) {
-        throw new Error(
-          `Failed to delete file from storage: ${storageError.message}`,
-        );
-      }
-
-      return data;
-    } catch (error) {
-      console.log('Error in deleteVoucher:', error);
-      throw error;
-    }
-  }
-
   async getVoucherDataByModel(
     text: string,
     model: 'together' | 'groq' | 'gemini',
@@ -230,6 +132,8 @@ export class VoucherService {
           'llama-3.2-11b-vision-preview',
           0.1,
         );
+
+      console.log(textFromGroqVision);
       const regex = /```json([\s\S]*?)```/;
       let match = textFromGroqVision.match(regex);
       let json = '';
@@ -251,6 +155,230 @@ export class VoucherService {
       return messageContent;
     } catch (error) {
       console.log('Error in scanVoucher:', error);
+      throw error;
+    }
+  }
+
+  async createVoucher(voucher: VoucherType, file: Express.Multer.File) {
+    try {
+      const client = this.supabaseService.getClient();
+      const { data, error } = await client
+        .from('VOUCHERS')
+        .insert({
+          transaction_number: voucher.transaction_number,
+          date: voucher.date ?? null,
+          igv: voucher.igv ?? 0,
+          total: voucher.total ?? 0,
+          vendor: voucher.vendor ?? '',
+          tax_amount: voucher.tax_amount ?? 0,
+          client: voucher.client ?? '',
+          img_name: file?.filename ?? '',
+        })
+        .select('*');
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (file) {
+        const uploadPath = path.join(
+          __dirname,
+          '../../../../uploads',
+          file.filename,
+        );
+        const existFile = fs.existsSync(uploadPath);
+        if (existFile) {
+          const fileContent = fs.readFileSync(uploadPath);
+          const { data: s3Data, error: s3Error } = await client.storage
+            .from('VOUCHER_AI')
+            .upload(`/VOUCHERS/${file.filename}`, fileContent);
+          if (s3Error || !s3Data) {
+            throw new Error(
+              `Failed to upload file: ${s3Data}, ${s3Error.message}`,
+            );
+          }
+          fs.unlinkSync(uploadPath);
+        }
+      }
+      let itemsResponse = [];
+      if (voucher.ITEMS.length) {
+        const itemsToInsert = voucher.ITEMS.map((item: ItemType) => ({
+          code: item.code,
+          name: item.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          VOUCHER_ID: data[0].id,
+        }));
+        const { data: items, error: itemsError } = await client
+          .from('ITEMS')
+          .insert(itemsToInsert)
+          .select('*');
+        if (itemsError) {
+          throw new Error(itemsError.message);
+        }
+        itemsResponse = items;
+      }
+      const newVoucher: VoucherType = {
+        ...data[0],
+        ITEMS: itemsResponse,
+      };
+      return JSON.stringify(newVoucher);
+    } catch (error) {
+      console.log('Error in createVoucher:', error);
+      throw error;
+    }
+  }
+
+  async updateVoucher(voucher: VoucherType) {
+    try {
+      const client = this.supabaseService.getClient();
+      const { ITEMS, id, ...rest } = voucher;
+      const { data, error } = await client
+        .from('VOUCHERS')
+        .update(rest)
+        .eq('id', id)
+        .select('*, ITEMS(*)');
+      if (error) {
+        throw new Error(error.message);
+      }
+      const currentItemsIds = data[0].ITEMS.map((item) => item.id);
+      const itemsIds = ITEMS.map((item) => item.id);
+
+      const newItems = ITEMS.filter(
+        (item) => !currentItemsIds.includes(item.id),
+      );
+
+      if (newItems.length) {
+        const itemsToInsert = newItems.map((item: ItemType) => ({
+          code: item.code,
+          name: item.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          VOUCHER_ID: voucher.id,
+        }));
+        const itemsInsertResponse = await client
+          .from('ITEMS')
+          .insert(itemsToInsert)
+          .select('*');
+        if (itemsInsertResponse.error) {
+          throw new Error(itemsInsertResponse.error.message);
+        }
+      }
+
+      const oldItems = currentItemsIds.filter((id) => !itemsIds.includes(id));
+
+      if (oldItems.length) {
+        const itemsToDelete = oldItems.map(async (id) => {
+          await client.from('ITEMS').delete().eq('id', id);
+        });
+
+        if (itemsToDelete.error) {
+          throw new Error(itemsToDelete.error.message);
+        }
+      }
+
+      return { ...data[0], ITEMS };
+    } catch (error) {
+      console.log('Error in updateVoucher:', error);
+      throw error;
+    }
+  }
+
+  async updateVoucherImg(voucher_id: string, file: Express.Multer.File) {
+    try {
+      const client = this.supabaseService.getClient();
+      const { data, error } = await client
+        .from('VOUCHERS')
+        .update({
+          img_name: file?.filename ?? null,
+        })
+        .eq('id', voucher_id)
+        .select('*');
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (file) {
+        const uploadPath = path.join(
+          __dirname,
+          '../../../../uploads',
+          file.filename,
+        );
+        const existFile = fs.existsSync(uploadPath);
+        if (existFile) {
+          const fileContent = fs.readFileSync(uploadPath);
+          const { data: s3Data, error: s3Error } = await client.storage
+            .from('VOUCHER_AI')
+            .upload(`/VOUCHERS/${file.filename}`, fileContent);
+          if (s3Error || !s3Data) {
+            throw new Error(
+              `Failed to upload file: ${s3Data}, ${s3Error.message}`,
+            );
+          }
+          fs.unlinkSync(uploadPath);
+        }
+      }
+      return data[0];
+    } catch (error) {
+      console.log('Error in updateVoucherImg:', error);
+      throw error;
+    }
+  }
+
+  async deleteVoucher(id: string) {
+    const client = this.supabaseService.getClient();
+    try {
+      const { data, error } = await client
+        .from('VOUCHERS')
+        .delete()
+        .eq('id', id)
+        .select('*');
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const { error: storageError } = await client.storage
+        .from('VOUCHER_AI')
+        .remove([`VOUCHERS/${data[0].img_name}`]);
+
+      if (storageError) {
+        throw new Error(
+          `Failed to delete file from storage: ${storageError.message}`,
+        );
+      }
+
+      return data[0];
+    } catch (error) {
+      console.log('Error in deleteVoucher:', error);
+      throw error;
+    }
+  }
+
+  async deleteVoucherImg(voucherId: string, img_name: string) {
+    try {
+      const client = this.supabaseService.getClient();
+      // delete from database
+      const { data, error } = await client
+        .from('VOUCHERS')
+        .update({
+          img_name: null,
+        })
+        .eq('id', voucherId)
+        .select('*');
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // delete from storage
+      const { error: storageError } = await client.storage
+        .from('VOUCHER_AI')
+        .remove([`VOUCHERS/${img_name}`]);
+
+      if (storageError) {
+        throw new Error(
+          `Failed to delete file from storage: ${storageError.message}`,
+        );
+      }
+      return data[0];
+    } catch (error) {
+      console.log('Error in deleteVoucherImg:', error);
       throw error;
     }
   }

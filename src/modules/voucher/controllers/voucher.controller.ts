@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseInterceptors,
@@ -103,8 +104,43 @@ export class VoucherController {
     return this.voucherService.createVoucher(parsedVoucher, file);
   }
 
+  @Put('update-voucher')
+  updateVoucher(@Body('voucher') voucher: VoucherType) {
+    console.log(voucher);
+    return this.voucherService.updateVoucher(voucher);
+  }
+
+  @Post('update-voucher-img')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  updateVoucherImg(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('voucher_id') voucher_id: string,
+  ) {
+    return this.voucherService.updateVoucherImg(voucher_id, file);
+  }
+
   @Delete('delete-voucher')
   deleteVoucher(@Query('id') id: string) {
     return this.voucherService.deleteVoucher(id);
+  }
+
+  @Delete('delete-voucher-img')
+  deleteVoucherImg(
+    @Query('voucher_id') voucher_id: string,
+    @Query('img_name') img_name: string,
+  ) {
+    return this.voucherService.deleteVoucherImg(voucher_id, img_name);
   }
 }

@@ -1,45 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { INestApplication } from '@nestjs/common';
-import { Express } from 'express';
-
-let app: INestApplication;
-let expressApp: Express;
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
-  if (!app) {
-    app = await NestFactory.create(AppModule);
-    const configService = app.get(ConfigService);
-
-    app.enableCors({
-      origin: configService.get('corsOrigin') ?? 'http://localhost:4000',
-      methods: 'GET,POST,PUT,DELETE',
-    });
-
-    await app.init();
-    expressApp = app.getHttpAdapter().getInstance();
-  }
-  return expressApp;
-}
-
-if (process.env.NODE_ENV !== 'production') {
-  bootstrap().then(async () => {
-    const configService = app.get(ConfigService);
-    const port = configService.get('port') || 3000;
-    await app.listen(port);
-    console.log(`Server running on port ${port} 🚀`);
+  const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const port = configService.get('port');
+  app.use(bodyParser.json({ limit: '10mb' }));
+  app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+  app.enableCors({
+    origin: ['http://localhost:4000', 'https://voucher-ai-frontend.vercel.app'],
+    methods: 'GET,POST,PUT,DELETE',
   });
+  await app.listen(port ?? 3000);
+  console.log(`Server running on port ${port} 🚀`);
 }
-
-export default async function handler(req: any, res: any) {
-  const expressApp = await bootstrap();
-  return new Promise((resolve, reject) => {
-    expressApp(req, res, (err?: any) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(undefined);
-    });
-  });
-}
+bootstrap();

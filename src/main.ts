@@ -15,7 +15,6 @@ async function bootstrap() {
     app.enableCors({
       origin: configService.get('corsOrigin') ?? 'http://localhost:4000',
       methods: 'GET,POST,PUT,DELETE',
-      allowedHeaders: 'Content-Type, Authorization',
     });
 
     await app.init();

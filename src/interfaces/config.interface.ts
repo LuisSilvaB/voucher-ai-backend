@@ -9,6 +9,7 @@ interface ApiConfigProps {
 
 export interface ConfigProps {
   port: number;
+  corsOrigin: string;
   api: ApiConfigProps;
   pathToCredentials: string;
 }

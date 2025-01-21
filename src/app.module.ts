@@ -6,7 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { config } from './config/config';
 import { SupabaseModule } from './modules/integrations/supabase/supabase.module';
 import { ChatModelsAiModule } from './modules/integrations/chat-models-ai/chat-models-ai.module';
-import { GoogleVisionModule } from './modules/integrations/google-vision/google-vision.module';
+import { ModelVisionModule } from './modules/integrations/model-vision/model-vision.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -15,7 +15,7 @@ import { GoogleVisionModule } from './modules/integrations/google-vision/google-
     }),
     SupabaseModule,
     ChatModelsAiModule,
-    GoogleVisionModule,
+    ModelVisionModule,
     VoucherModule,
   ],
   controllers: [AppController],

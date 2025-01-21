@@ -56,6 +56,31 @@ export class VoucherController {
     return this.voucherService.getVoucherDataByGoogleVision(file, body.model);
   }
 
+  @Post('scan-groq-vision')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
+  scanVoucherGroqVision(
+    @UploadedFile()
+    file: Express.Multer.File,
+    @Body()
+    body: {
+      model: 'gemini' | 'together' | 'groq';
+    },
+  ) {
+    return this.voucherService.getVoucherDataByGroqVision(file, body.model);
+  }
+
   @Post('create-voucher')
   @UseInterceptors(
     FileInterceptor('file', {

@@ -1,27 +1,22 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { ImageAnnotatorClient } from '@google-cloud/vision';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { generateVoucherPrompt } from '../utils/constants/prompt.constant';
 import { ItemType, VoucherType } from '../types/vaucher.type';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SupabaseService } from 'src/modules/integrations/supabase/services/supabase.service';
 import { ChatModelsAiService } from 'src/modules/integrations/chat-models-ai/services/chat-models-ai.service';
-import { GoogleVisionService } from 'src/modules/integrations/google-vision/services/google-vision.service';
+import { ModelVisionService } from 'src/modules/integrations/model-vision/services/model-vision.service';
 
 @Injectable()
 export class VoucherService {
-  private readonly cloudVisionClient: ImageAnnotatorClient;
-  private readonly textServiceClient: GoogleGenerativeAI;
   private readonly conf: any;
-  private readonly logger = new Logger(VoucherService.name);
 
   constructor(
     private readonly configService: ConfigService,
     private readonly supabaseService: SupabaseService,
     private readonly chatModelsAiService: ChatModelsAiService,
-    private readonly googleVisionService: GoogleVisionService,
+    private readonly modelVisionService: ModelVisionService,
   ) {
     this.conf = {
       lang: 'eng',
@@ -207,10 +202,9 @@ export class VoucherService {
     file: Express.Multer.File,
     model: 'gemini' | 'together' | 'groq',
   ) {
-    console.log(file, model);
     try {
       const textFromGoogleVision =
-        await this.googleVisionService.scanVoucherByGoogleVision(file);
+        await this.modelVisionService.scanVoucherByGoogleVision(file);
       const voucherData = await this.getVoucherDataByModel(
         textFromGoogleVision,
         model,
@@ -222,42 +216,39 @@ export class VoucherService {
     }
   }
 
-  async scanVoucherGoogleVisionAndGemini(file: Express.Multer.File) {
+  async getVoucherDataByGroqVision(
+    file: Express.Multer.File,
+    model: 'gemini' | 'together' | 'groq',
+  ) {
     try {
-      const uploadPath = path.join(
-        __dirname,
-        '../../../../uploads',
-        file.filename,
-      );
-      const existFile = fs.existsSync(uploadPath);
-      if (existFile) {
-        // const fileContent = fs.readFileSync(uploadPath);
-        const [result] = await this.cloudVisionClient.textDetection(uploadPath);
-        const modelAi = this.textServiceClient.getGenerativeModel({
-          model: 'gemini-1.5-flash',
-        });
-        const prompt = generateVoucherPrompt(result.fullTextAnnotation.text);
-        const response = await modelAi.generateContent(prompt);
-        const regex = /```json([\s\S]*?)```/;
-        let match = response.response.text().match(regex);
-        let json = '';
-        if (match) {
-          json = match[1].trim();
-        } else {
-          const jsonRegex = /{[\s\S]*}/;
-          match = response.response.text().match(jsonRegex);
-          if (match) {
-            json = match[0].trim();
-          } else {
-            throw new Error('No JSON found in response');
-          }
-        }
-        json = json.replace(/\\_/g, '_');
-        const messageContent = JSON.parse(json);
-        return messageContent;
+      console.log(model);
+      const prompt = generateVoucherPrompt('');
+      const textFromGroqVision =
+        await this.modelVisionService.scanVoucherByGroqVision(
+          file,
+          prompt,
+          'llama-3.2-11b-vision-preview',
+          0.1,
+        );
+      const regex = /```json([\s\S]*?)```/;
+      let match = textFromGroqVision.match(regex);
+      let json = '';
+
+      if (match) {
+        json = match[1].trim();
       } else {
-        throw new Error('File not found');
+        const jsonRegex = /{[\s\S]*}/;
+        match = textFromGroqVision.match(jsonRegex);
+        if (match) {
+          json = match[0].trim();
+        } else {
+          throw new Error('No JSON found in response');
+        }
       }
+
+      json = json.replace(/\\_/g, '_');
+      const messageContent = JSON.parse(json);
+      return messageContent;
     } catch (error) {
       console.log('Error in scanVoucher:', error);
       throw error;

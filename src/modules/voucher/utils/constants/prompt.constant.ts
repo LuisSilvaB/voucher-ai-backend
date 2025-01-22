@@ -66,7 +66,7 @@ You are a multilingual data extraction AI specializing in receipt analysis. Your
     {
       "code": "",             // Optional, default: ""  
       "name": "",             // Required, default: ""
-      "quantity": number,     // Required, default: 0 (integer)
+      "quantity": number,     // Required, default: 0 (only integer, not decimal)
       "unit_price": number,   // Required, default: 0
     }
   ]                     // Maximum 10 items, prioritize by clarity
